@@ -1,4 +1,4 @@
-# Shark Game — Build & Deploy Pipeline
+# Scratch Game — Build & Deploy Pipeline
 
 Pipeline om een Scratch-project vanuit de **Scratch UI** te packagen naar een standalone `index.html` en te deployen naar een Azure Web App.
 
