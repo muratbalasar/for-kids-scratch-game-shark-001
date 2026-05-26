@@ -103,26 +103,26 @@ function Get-EnvironmentConfig {
 ## Hoe het mechanisme werkt
 
 ```
-Scratch UI  →  input\*.sb3.zip  →  SHARK_GAME_pkg.sb3  →  output/index.html  →  Azure Web App
+Scratch UI  →  input\*.sb3(.zip)  →  SHARK_GAME_pkg.sb3  →  output/index.html  →  Azure Web App
 ```
 
 | Stap | Wat er gebeurt |
 |------|----------------|
-| **1. Input** | Je downloadt je project vanuit de Scratch UI als `.sb3.zip` (bijv. `SHARK GAME_v0.2.sb3.zip`) en zet dit in de `input\` folder. Een `.sb3` bestand is intern een gewone zip met `project.json` en alle assets. Bij meerdere bestanden wordt automatisch de nieuwste (op basis van `LastWriteTime`) geselecteerd. |
+| **1. Input** | Je downloadt je project vanuit de Scratch UI als `.sb3.zip` of `.sb3` en zet dit in de `input\` folder. Beide extensies worden ondersteund — bij meerdere bestanden wordt automatisch de nieuwste (op basis van `LastWriteTime`) geselecteerd. |
 | **2. Voorbereiding** | Het script kopieert het gedownloade bestand als `SHARK_GAME_pkg.sb3` — geen uitpakken nodig. |
 | **3. Packaging** | `package-sb3.js` roept `@turbowarp/packager` aan. De packager leest het `.sb3` bestand, laadt het Scratch-project en genereert een volledig standalone `output/index.html` (inclusief de Scratch runtime van TurboWarp). |
 | **4. Deploy** | De gegenereerde `index.html` wordt ingepakt als `deploy_game.zip` en via de Azure CLI (`az webapp deploy`) gepusht naar de Azure Web App. |
-| **5. Archief** | Na een succesvolle deploy worden het originele `.sb3.zip` en `index.html` gekopieerd naar `archive\<timestamp>\`. Tijdelijke artifacts worden opgeruimd. |
+| **5. Archief** | Na een succesvolle deploy worden het originele `.sb3(.zip)` bestand en `index.html` gekopieerd naar `archive\<timestamp>\`. Tijdelijke artifacts worden opgeruimd. |
 
 ---
 
 ## Werkwijze
 
-1. Download het project vanuit de Scratch UI als `.sb3.zip`
+1. Download het project vanuit de Scratch UI als `.sb3.zip` of `.sb3`
 2. Zet het bestand in de `input\` folder
 3. Kies de doelomgeving en roep het script aan (zie smaken hieronder)
 
-> Bij meerdere bestanden in `input\` wordt altijd de nieuwste gekozen op basis van `LastWriteTime`. Het script toont een overzicht met timestamps en markeert het geselecteerde bestand.
+> Bij meerdere bestanden in `input\` wordt altijd de nieuwste gekozen op basis van `LastWriteTime`. Zowel `.sb3` als `.sb3.zip` worden ondersteund. Het script toont een overzicht met timestamps en markeert het geselecteerde bestand.
 
 ---
 
@@ -182,7 +182,7 @@ Of via de shortcuts:
 
 ### Volledige run (build + deploy) met omgeving
 
-Automatisch de nieuwste `*.sb3.zip` uit `input\` detecteren en deployen:
+Automatisch de nieuwste `*.sb3(.zip)` uit `input\` detecteren en deployen:
 
 ```powershell
 .\build-and-deploy.ps1 -Environment Ontwikkel
@@ -225,7 +225,7 @@ Voert stap 1 t/m 3 volledig uit (inclusief packaging), maar slaat de `az webapp 
 | Folder / Bestand | Omschrijving | In git? |
 |---|---|---|
 | `__config.ps1` | Azure credentials per omgeving (service principal) | ❌ nee |
-| `input\` | Hier zet je de gedownloade `.sb3.zip` bestanden | ❌ nee |
+| `input\` | Hier zet je de gedownloade `.sb3` of `.sb3.zip` bestanden | ❌ nee |
 | `output\index.html` | Standalone game — gegenereerd door packager | ❌ nee |
 | `archive\<timestamp>\` | Archief per deploy — originele zip + index.html | ❌ nee |
 | `SHARK_GAME_pkg.sb3` | Tijdelijk artifact — wordt na deploy verwijderd | ❌ nee |
