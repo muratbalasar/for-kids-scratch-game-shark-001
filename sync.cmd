@@ -19,6 +19,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "git add -A; " ^
     "git commit -m '%COMMIT_MSG%'; " ^
     "git remote set-url origin \"https://muratbalasar:$token@github.com/muratbalasar/for-kids-scratch-game-shark-001.git\"; " ^
-    "git pull --rebase origin main 2>&1; " ^
+    "git pull 2>&1; " ^
     "git push; " ^
     "git remote set-url origin 'https://github.com/muratbalasar/for-kids-scratch-game-shark-001.git'"
