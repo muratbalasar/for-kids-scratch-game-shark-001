@@ -148,7 +148,7 @@ jobs:
           fi
 
       - name: Create deploy package
-        run: zip deploy_game.zip output/index.html
+        run: zip -j deploy_game.zip output/index.html
 
       - name: Deploy to Azure Web App
         run: |
