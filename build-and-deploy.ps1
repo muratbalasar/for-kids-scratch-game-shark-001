@@ -24,7 +24,7 @@ $resourceGroup = $cfg.ResourceGroup
 
 Write-Host "`nOmgeving: $($cfg.Name)" -ForegroundColor White
 
-$rootDir        = "d:\tmp\game1"
+$rootDir        = $PSScriptRoot
 $inputDir       = "$rootDir\input"
 $archiveRoot    = "$rootDir\archive"
 $sb3File        = "$rootDir\_GAME_pkg.sb3"
