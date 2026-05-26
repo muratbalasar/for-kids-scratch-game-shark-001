@@ -28,14 +28,14 @@ on:
       environment:
         description: 'Target environment'
         required: true
-        default: 'sandbox'
+        default: 'Sandbox'
         type: choice
         options:
-          - sandbox
-          - ontwikkel
-          - test
-          - acceptatie
-          - productie
+          - Sandbox
+          - Ontwikkel
+          - Test
+          - Acceptatie
+          - Productie
       input_file:
         description: 'Naam van het .sb3.zip bestand in input/ (leeg = nieuwste)'
         required: false
