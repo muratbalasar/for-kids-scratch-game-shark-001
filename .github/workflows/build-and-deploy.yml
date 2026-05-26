@@ -100,7 +100,7 @@ jobs:
         run: cp "${{ steps.find-sb3.outputs.filepath }}" _GAME_pkg.sb3
 
       - name: Package game (TurboWarp Packager)
-        run: node package-sb3.js _GAME_pkg.sb3
+        run: node package-sb3.js _GAME_pkg.sb3 "${{ vars.AZURE_WEBAPP_NAME }}"
 
       - name: Verify output
         run: |
