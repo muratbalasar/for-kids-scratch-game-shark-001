@@ -49,9 +49,9 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy (${{ github.event.inputs.environment || 'sandbox' }})
+    name: Build & Deploy (${{ github.event.inputs.environment || 'Sandbox' }})
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'sandbox' }}
+    environment: ${{ github.event.inputs.environment || 'Sandbox' }}
     permissions:
       id-token: write   # vereist voor OIDC-login
       contents: read
