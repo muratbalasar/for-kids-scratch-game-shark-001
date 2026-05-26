@@ -10,12 +10,14 @@ if "%~1"=="" (
     exit /b 1
 )
 
+set SCRIPT_DIR=%~dp0
+set COMMIT_MSG=%~1
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$msg = '%~1'; " ^
-    "$tokenFile = Join-Path $PSScriptRoot '__git-token.txt'; " ^
+    "$tokenFile = '%SCRIPT_DIR%__git-token.txt'; " ^
     "if (Test-Path $tokenFile) { $token = (Get-Content $tokenFile).Trim() } else { $token = Read-Host 'GitHub PAT token' }; " ^
     "git add -A; " ^
-    "git commit -m $msg; " ^
+    "git commit -m '%COMMIT_MSG%'; " ^
     "git remote set-url origin \"https://muratbalasar:$token@github.com/muratbalasar/for-kids-scratch-game-shark-001.git\"; " ^
     "git push; " ^
     "git remote set-url origin 'https://github.com/muratbalasar/for-kids-scratch-game-shark-001.git'"
