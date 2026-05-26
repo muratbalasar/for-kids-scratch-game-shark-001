@@ -1,6 +1,6 @@
 # Scratch Game — Build & Deploy Pipeline
 
-Pipeline om een Scratch-project vanuit de **Scratch UI** te packagen naar een standalone `index.html` en te deployen naar een Azure Web App.
+Pipeline om een Scratch-project vanuit de **Scratch UI** te packagen naar een standalone `index.html` en te deployen naar een Azure Web App. 
 
 ---
 
@@ -8,7 +8,7 @@ Pipeline om een Scratch-project vanuit de **Scratch UI** te packagen naar een st
 
 ### 1. Node.js installeren
 
-Installeer Node.js **LTS** via een van de onderstaande methoden.
+Installeer Node.js **LTS** via een van de onderstaande methoden op je werkstation.
 
 #### Windows — handmatig
 
