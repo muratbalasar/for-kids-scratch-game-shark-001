@@ -1,7 +1,7 @@
 # ============================================================
 # build.ps1
 # Shortcut: alleen packagen voor Sandbox (geen deploy)
-# Gebruik: .\build.ps1 [-InputZip "bestandsnaam.sb3.zip"]
+# Gebruik: .\build.ps1 [-InputZip "bestandsnaam.sb3.zip of .sb3"]
 # ============================================================
 param(
     [string]$InputZip = ""

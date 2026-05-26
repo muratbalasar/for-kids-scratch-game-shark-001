@@ -1,7 +1,7 @@
 # ============================================================
 # build-and-deploy.ps1
 # Pipeline: .sb3.zip download --> index.html --> Azure Web App
-# Gebruik: .\build-and-deploy.ps1 [-Environment Sandbox] [-InputZip "bestandsnaam.sb3.zip"] [-WhatIf]
+# Gebruik: .\build-and-deploy.ps1 [-Environment Sandbox] [-InputZip "bestandsnaam.sb3.zip of .sb3"] [-WhatIf]
 #          Zonder -Environment: default = Sandbox
 #          Zonder -InputZip: pakt automatisch de nieuwste uit de input\ folder
 # ============================================================
