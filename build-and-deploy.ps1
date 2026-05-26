@@ -92,7 +92,7 @@ function Invoke-Prepare {
 
 function Invoke-Packaging {
     Push-Location $rootDir
-    node package-sb3.js $sb3File
+    node package-sb3.js $sb3File $appName
     Pop-Location
 
     if (-not (Test-Path $outputHtml)) {

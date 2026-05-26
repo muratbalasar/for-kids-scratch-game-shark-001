@@ -4,6 +4,7 @@ const Packager = require('@turbowarp/packager');
 
 const run = async () => {
   const inputFile = process.argv[2] || path.join(__dirname, '_GAME_pkg.sb3');
+  const webAppName = (process.argv[3] || process.env.WEB_APP_NAME || '').trim();
   const outputDir  = path.join(__dirname, 'output');
   const outputFile = path.join(outputDir, 'index.html');
 
@@ -26,6 +27,9 @@ const run = async () => {
 
   const packager = new Packager.Packager();
   packager.project = loadedProject;
+  if (webAppName) {
+    packager.options.app.windowTitle = `Tinko-Games-${webAppName}`;
+  }
 
   const result = await packager.package();
 
