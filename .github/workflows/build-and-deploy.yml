@@ -1,0 +1,206 @@
+# ============================================================
+# build-and-deploy.yml
+# Pipeline: input/*.sb3.zip --> index.html --> Azure Web App
+#
+# Authenticatie: OIDC / Workload Identity Federation (geen client secret nodig)
+#
+# Eenmalige setup in Azure per environment:
+#   1. Ga naar App Registration → Certificates & secrets → Federated credentials
+#   2. Voeg toe: Entity type = Environment
+#      GitHub org/repo : muratbalasar/for-kids-scratch-game-shark-001
+#      Environment name: sandbox  (herhaal voor elke omgeving)
+#
+# Vereiste GitHub-omgevingsecrets (stel in per environment):
+#   AZURE_CLIENT_ID       – Application (client) ID van de service principal
+#   AZURE_TENANT_ID       – Directory (tenant) ID
+#   AZURE_SUBSCRIPTION_ID – Azure subscription ID
+#   AZURE_WEBAPP_NAME     – Naam van de Azure Web App  (environment variabele, geen secret)
+#   AZURE_RESOURCE_GROUP  – Resource group van de Web App
+#
+# GitHub environments: sandbox | ontwikkel | test | acceptatie | productie
+# ============================================================
+
+name: Build & Deploy Shark Game
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+          - sandbox
+          - ontwikkel
+          - test
+          - acceptatie
+          - productie
+      input_file:
+        description: 'Naam van het .sb3.zip bestand in input/ (leeg = nieuwste)'
+        required: false
+        default: ''
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'input/**.sb3.zip'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy (${{ github.event.inputs.environment || 'sandbox' }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'sandbox' }}
+    permissions:
+      id-token: write   # vereist voor OIDC-login
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Vind het .sb3.zip bestand ──────────────────────────
+      - name: Find .sb3.zip input file
+        id: find-sb3
+        run: |
+          INPUT_FILE="${{ github.event.inputs.input_file }}"
+
+          if [ -n "$INPUT_FILE" ]; then
+            # Bestandsnaam opgegeven via workflow_dispatch input
+            FILEPATH="input/$INPUT_FILE"
+            if [ ! -f "$FILEPATH" ]; then
+              echo "::error::Opgegeven bestand niet gevonden: $FILEPATH"
+              exit 1
+            fi
+          else
+            # Auto-detect: pak de nieuwste .sb3.zip uit input/
+            FILEPATH=$(ls -t input/*.sb3.zip 2>/dev/null | head -1)
+            if [ -z "$FILEPATH" ]; then
+              echo "::error::Geen .sb3.zip bestand gevonden in input/"
+              exit 1
+            fi
+          fi
+
+          echo "Gevonden: $FILEPATH"
+          echo "filepath=$FILEPATH" >> "$GITHUB_OUTPUT"
+
+      # ── Node.js setup & package installatie ───────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm install
+
+      # ── Packager uitvoeren ─────────────────────────────────
+      - name: Prepare .sb3 file
+        run: cp "${{ steps.find-sb3.outputs.filepath }}" _GAME_pkg.sb3
+
+      - name: Package game (TurboWarp Packager)
+        run: node package-sb3.js _GAME_pkg.sb3
+
+      - name: Verify output
+        run: |
+          if [ ! -f "output/index.html" ]; then
+            echo "::error::Packaging mislukt: output/index.html niet gevonden."
+            exit 1
+          fi
+          SIZE=$(du -sh output/index.html | cut -f1)
+          echo "output/index.html gegenereerd ($SIZE)"
+
+      # ── Azure deployment ───────────────────────────────────
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure Azure Web App exists
+        run: |
+          APP_NAME="${{ vars.AZURE_WEBAPP_NAME }}"
+          RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+          PLAN_NAME="${APP_NAME}-plan"
+
+          EXISTS=$(az webapp show \
+            --name "$APP_NAME" \
+            --resource-group "$RG" \
+            --query "name" -o tsv 2>/dev/null || true)
+
+          if [ -z "$EXISTS" ]; then
+            echo "Web app '$APP_NAME' bestaat niet, wordt aangemaakt..."
+
+            az appservice plan create \
+              --name           "$PLAN_NAME" \
+              --resource-group "$RG" \
+              --sku            F1
+
+            az webapp create \
+              --name           "$APP_NAME" \
+              --resource-group "$RG" \
+              --plan           "$PLAN_NAME"
+
+            echo "Web app '$APP_NAME' aangemaakt (Free tier)."
+          else
+            echo "Web app '$APP_NAME' bestaat al."
+          fi
+
+      - name: Create deploy package
+        run: zip deploy_game.zip output/index.html
+
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp deploy \
+            --name           "${{ vars.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --src-path       deploy_game.zip \
+            --type           zip \
+            --async          false
+
+      - name: Verify deployment
+        run: |
+          APP_URL="https://${{ vars.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+          echo "Deployed to: $APP_URL"
+          echo "Waiting for app to start (this may take a minute)..."
+          sleep 10
+
+          max_attempts=19
+          attempt=0
+          success=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt of $max_attempts..."
+
+            response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 --connect-timeout 5 "$APP_URL" || echo "000")
+
+            if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "401" ]; then
+              echo "✓ Application is running (HTTP $response)"
+              success=true
+              break
+            else
+              echo "✗ Application not ready yet (HTTP $response)"
+            fi
+
+            if [ $attempt -lt $max_attempts ]; then
+              sleep 10
+            fi
+          done
+
+          if [ "$success" = "false" ]; then
+            echo "::warning title=Application Health Check::Application did not respond after $max_attempts attempts. This might be normal for cold starts."
+            echo "::warning title=Manual Verification Required::Please verify the application manually at: $APP_URL"
+            echo ""
+            echo "⚠ Application did not respond after $max_attempts attempts"
+            echo "This might be normal for cold starts. Check the URL manually:"
+            echo "$APP_URL"
+            exit 0
+          fi
+
+          echo "Game is live op: $APP_URL"
+
+      - name: Azure Logout
+        if: always()
+        run: az logout

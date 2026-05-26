@@ -251,3 +251,76 @@ De credentials en Azure-instellingen worden per omgeving geladen uit `__config.p
 | Service principal | `__config.ps1` → `ClientId` / `ClientSecret` |
 
 De URL van de live applicatie is `https://<WebAppName>.azurewebsites.net` — afhankelijk van de gekozen omgeving.
+
+---
+
+## GitHub Actions workflow
+
+De pipeline is volledig geautomatiseerd via `.github/workflows/build-and-deploy.yml`. De workflow is een 1-op-1 equivalent van `build-and-deploy.ps1` en draait op een Linux runner in GitHub.
+
+### Triggers
+
+| Trigger | Omgeving | Beschrijving |
+|---|---|---|
+| Push naar `main` met wijziging in `input/**.sb3.zip` | `sandbox` | Automatisch na inchecken van een nieuw `.sb3.zip` bestand |
+| Handmatig via _Actions → Run workflow_ | Keuze | Deploy naar een specifieke omgeving met optioneel bestandsnaam |
+
+### Authenticatie — OIDC (geen wachtwoord)
+
+De workflow gebruikt **Workload Identity Federation (OIDC)** — er wordt geen `clientSecret` opgeslagen. GitHub authenticeert direct bij Azure via een short-lived token.
+
+**Eenmalige setup in Azure** per environment:
+
+1. Ga naar **Azure Portal → App Registrations → jouw app → Certificates & secrets → Federated credentials**
+2. Klik **Add credential** → kies **GitHub Actions**
+3. Vul in:
+   - Organization: `muratbalasar`
+   - Repository: `for-kids-scratch-game-shark-001`
+   - Entity type: **Environment**
+   - Environment name: `sandbox` _(herhaal voor elke omgeving)_
+
+### GitHub environments
+
+Maak in GitHub (**Settings → Environments**) de volgende environments aan:
+
+| Environment | Azure omgeving |
+|---|---|
+| `sandbox` | SANDBOX (S) |
+| `ontwikkel` | ONTWIKKEL (O) |
+| `test` | TEST (T) |
+| `acceptatie` | ACCEPTATIE (A) |
+| `productie` | PRODUCTIE (P) |
+
+### Secrets & variables per environment
+
+Stel per environment de volgende waarden in. De waarden zijn terug te vinden in `__config.ps1`.
+
+**Secrets** (_Settings → Environments → [env] → Secrets_):
+
+| Secret | Waarde uit `__config.ps1` |
+|---|---|
+| `AZURE_CLIENT_ID` | `ClientId` |
+| `AZURE_TENANT_ID` | `TenantId` |
+| `AZURE_SUBSCRIPTION_ID` | `SubscriptionId` |
+| `AZURE_RESOURCE_GROUP` | `ResourceGroup` |
+
+**Variables** (_Settings → Environments → [env] → Variables_):
+
+| Variable | Waarde uit `__config.ps1` |
+|---|---|
+| `AZURE_WEBAPP_NAME` | `WebAppName` |
+
+### Pipeline stappen
+
+```
+input/*.sb3.zip  →  _GAME_pkg.sb3  →  node package-sb3.js  →  output/index.html  →  deploy_game.zip  →  Azure Web App
+```
+
+| Stap | Actie |
+|---|---|
+| **Find .sb3.zip** | Auto-detect nieuwste bestand in `input/`, of gebruik opgegeven bestandsnaam |
+| **npm install** | Installeert `@turbowarp/packager` |
+| **Package** | `node package-sb3.js` genereert `output/index.html` |
+| **Azure Login** | OIDC-login — geen wachtwoord |
+| **Ensure Web App** | Maakt Web App en App Service Plan (F1) aan als ze nog niet bestaan |
+| **Deploy** | `az webapp deploy` pusht `deploy_game.zip` naar de Web App |
