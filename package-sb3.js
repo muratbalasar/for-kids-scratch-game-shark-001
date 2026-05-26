@@ -28,7 +28,23 @@ const run = async () => {
   packager.project = loadedProject;
 
   const result = await packager.package();
+
   fs.writeFileSync(outputFile, result.data);
+  
+  // Inject mobile CSS after file is written successfully
+  const mobileCSS = `<style>
+html, body { height: 100%; margin: 0; padding: 0; }
+body { min-height: -webkit-fill-available; }
+@supports (height: 100dvh) { body { min-height: 100dvh; } }
+canvas { touch-action: none; display: block; }
+* { -webkit-tap-highlight-color: transparent; }
+</style>`;
+
+  let html = fs.readFileSync(outputFile, 'utf8');
+  html = html.replace(/<\/head>/, mobileCSS + '\n</head>');
+  if (html.includes(mobileCSS)) {
+    fs.writeFileSync(outputFile, html, 'utf8');
+  }
   console.log(`Done! Output: ${outputFile} (${(result.data.length / 1024 / 1024).toFixed(2)} MB)`);
 };
 
