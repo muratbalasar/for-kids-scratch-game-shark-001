@@ -38,12 +38,13 @@ function Resolve-InputFile {
     param([string]$Path)
 
     if (-not $Path) {
-        # Auto-detect: pik de nieuwste .sb3.zip uit de input\ folder
-        $candidates = Get-ChildItem -Path $inputDir -Filter "*.sb3.zip" |
+        # Auto-detect: pik de nieuwste .sb3.zip of .sb3 uit de input\ folder
+        $candidates = @(Get-ChildItem -Path "$inputDir\*.sb3.zip") +
+                      @(Get-ChildItem -Path "$inputDir\*.sb3") |
                       Sort-Object LastWriteTime -Descending
 
         if (-not $candidates) {
-            Write-Error "Geen .sb3.zip gevonden in $inputDir.`nGebruik: .\build-and-deploy.ps1 -InputZip 'bestandsnaam.sb3.zip'"
+            Write-Error "Geen .sb3.zip of .sb3 gevonden in $inputDir.`nGebruik: .\build-and-deploy.ps1 -InputZip 'bestandsnaam.sb3.zip'"
             exit 1
         }
 

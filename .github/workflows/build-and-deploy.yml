@@ -37,7 +37,7 @@ on:
           - Acceptatie
           - Productie
       input_file:
-        description: 'Naam van het .sb3.zip bestand in input/ (leeg = nieuwste)'
+        description: 'Naam van het .sb3.zip of .sb3 bestand in input/ (leeg = nieuwste)'
         required: false
         default: ''
 
@@ -46,6 +46,7 @@ on:
       - main
     paths:
       - 'input/**.sb3.zip'
+      - 'input/**.sb3'
 
 jobs:
   build-and-deploy:
@@ -74,10 +75,10 @@ jobs:
               exit 1
             fi
           else
-            # Auto-detect: pak de nieuwste .sb3.zip uit input/
-            FILEPATH=$(ls -t input/*.sb3.zip 2>/dev/null | head -1)
+            # Auto-detect: pak de nieuwste .sb3.zip of .sb3 uit input/
+            FILEPATH=$(ls -t input/*.sb3.zip input/*.sb3 2>/dev/null | head -1)
             if [ -z "$FILEPATH" ]; then
-              echo "::error::Geen .sb3.zip bestand gevonden in input/"
+              echo "::error::Geen .sb3.zip of .sb3 bestand gevonden in input/"
               exit 1
             fi
           fi
