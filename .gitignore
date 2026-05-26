@@ -32,6 +32,7 @@ out/
 .env.local
 .env.*.local
 __config.ps1
+__git-token.txt
 
 # Logs
 logs/
