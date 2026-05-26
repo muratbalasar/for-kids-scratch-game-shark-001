@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@turbowarp/packager": "3.13.0"
+  }
+}
